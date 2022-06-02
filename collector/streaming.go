@@ -140,8 +140,9 @@ func newServerzCollector(system string, servers []*CollectedServer) prometheus.C
 	nc.servers = make([]*CollectedServer, len(servers))
 	for i, s := range servers {
 		nc.servers[i] = &CollectedServer{
-			ID:  s.ID,
-			URL: s.URL + serverzSuffix,
+			ID:     s.ID,
+			URL:    s.URL + serverzSuffix,
+			AcctID: s.AcctID,
 		}
 	}
 
@@ -186,7 +187,7 @@ type StreamingServerz struct {
 func (nc *serverzCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, server := range nc.servers {
 		var resp StreamingServerz
-		if err := getMetricURL(nc.httpClient, server.URL, &resp); err != nil {
+		if err := getMetricURL(nc.httpClient, server.URL, server.AcctID, &resp); err != nil {
 			Debugf("ignoring server %s: %v", server.ID, err)
 			continue
 		}
@@ -306,7 +307,7 @@ func getRoleFromChannelszURL(client *http.Client, url string) (string, error) {
 
 	var newURL = (strings.TrimSuffix(url, channelszSuffix) + serverzSuffix)
 	var serverResp StreamingServerz
-	if err := getMetricURL(client, newURL, &serverResp); err != nil {
+	if err := getMetricURL(client, newURL, "", &serverResp); err != nil {
 		return "", err
 	}
 	return serverResp.Role, nil
@@ -315,7 +316,7 @@ func getRoleFromChannelszURL(client *http.Client, url string) (string, error) {
 func (nc *channelsCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, server := range nc.servers {
 		var resp Channelsz
-		if err := getMetricURL(nc.httpClient, server.URL, &resp); err != nil {
+		if err := getMetricURL(nc.httpClient, server.URL, server.AcctID, &resp); err != nil {
 			Debugf("ignoring server %s: %v", server.ID, err)
 			continue
 		}

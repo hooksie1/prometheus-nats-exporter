@@ -64,6 +64,7 @@ type NATSExporterOptions struct {
 	HTTPPassword         string
 	Prefix               string
 	UseInternalServerID  bool
+	Account              string
 }
 
 // NATSExporter collects NATS metrics
@@ -155,7 +156,7 @@ func (ne *NATSExporter) AddServer(id, url string) error {
 	if ne.mode == modeStarted {
 		return fmt.Errorf("servers cannot be added after the exporter is started")
 	}
-	cs := &collector.CollectedServer{ID: id, URL: url}
+	cs := &collector.CollectedServer{ID: id, URL: url, AcctID: ne.opts.Account}
 	if ne.servers == nil {
 		ne.servers = make([]*collector.CollectedServer, 0)
 	}

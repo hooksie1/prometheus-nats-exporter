@@ -38,8 +38,9 @@ var (
 
 // CollectedServer is a NATS server polled by this collector
 type CollectedServer struct {
-	URL string
-	ID  string
+	URL    string
+	ID     string
+	AcctID string
 }
 
 type metric struct {
@@ -106,8 +107,19 @@ func newLabelGauge(system, subsystem, name, help, prefix, label string) *prometh
 // GetMetricURL retrieves a NATS Metrics JSON.
 // This can be called against any monitoring URL for NATS.
 // On any this function will error, warn and return nil.
-func getMetricURL(httpClient *http.Client, url string, response interface{}) error {
-	resp, err := httpClient.Get(url)
+func getMetricURL(httpClient *http.Client, url string, acctID string, response interface{}) error {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	if acctID != "" {
+		q := req.URL.Query()
+		q.Add("acc", acctID)
+		req.URL.RawQuery = q.Encode()
+	}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -199,7 +211,7 @@ func (nc *NATSCollector) makeRequests() map[string]map[string]interface{} {
 	resps := make(map[string]map[string]interface{})
 	for _, u := range nc.servers {
 		var response = map[string]interface{}{}
-		if err := getMetricURL(nc.httpClient, u.URL, &response); err != nil {
+		if err := getMetricURL(nc.httpClient, u.URL, u.AcctID, &response); err != nil {
 			Debugf("ignoring server %s: %v", u.ID, err)
 			delete(resps, u.ID)
 		}
@@ -276,7 +288,7 @@ func (nc *NATSCollector) initMetricsFromServers(namespace string) {
 	// gets URLs until one responds.
 	for _, v := range nc.servers {
 		Tracef("Initializing metrics collection from: %s", v.URL)
-		if err := getMetricURL(nc.httpClient, v.URL, &response); err != nil {
+		if err := getMetricURL(nc.httpClient, v.URL, v.AcctID, &response); err != nil {
 			// if a server is not running, silently ignore it.
 
 			isConnectErr := strings.Contains(err.Error(), "connection refused") ||

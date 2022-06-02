@@ -190,8 +190,9 @@ func newReplicatorCollector(system string, servers []*CollectedServer) prometheu
 	nc.servers = make([]*CollectedServer, len(servers))
 	for i, s := range servers {
 		nc.servers[i] = &CollectedServer{
-			ID:  s.ID,
-			URL: s.URL + "/varz",
+			ID:     s.ID,
+			URL:    s.URL + "/varz",
+			AcctID: s.AcctID,
 		}
 	}
 
@@ -222,7 +223,7 @@ func (nc *replicatorCollector) Describe(ch chan<- *prometheus.Desc) {
 func (nc *replicatorCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, server := range nc.servers {
 		var resp replicatorVarz
-		if err := getMetricURL(nc.httpClient, server.URL, &resp); err != nil {
+		if err := getMetricURL(nc.httpClient, server.URL, server.AcctID, &resp); err != nil {
 			Debugf("ignoring server %s: %v\n", server.ID, err)
 			continue
 		}

@@ -76,8 +76,9 @@ func newConnzCollector(system, endpoint string, servers []*CollectedServer) prom
 	nc.servers = make([]*CollectedServer, len(servers))
 	for i, s := range servers {
 		nc.servers[i] = &CollectedServer{
-			ID:  s.ID,
-			URL: s.URL + "/connz",
+			ID:     s.ID,
+			URL:    s.URL + "/connz",
+			AcctID: s.AcctID,
 		}
 	}
 
@@ -92,7 +93,7 @@ func (nc *connzCollector) Describe(ch chan<- *prometheus.Desc) {
 func (nc *connzCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, server := range nc.servers {
 		var resp Connz
-		if err := getMetricURL(nc.httpClient, server.URL, &resp); err != nil {
+		if err := getMetricURL(nc.httpClient, server.URL, server.AcctID, &resp); err != nil {
 			Debugf("ignoring server %s: %v", server.ID, err)
 			continue
 		}

@@ -211,8 +211,9 @@ func newJszCollector(system, endpoint string, servers []*CollectedServer) promet
 	nc.servers = make([]*CollectedServer, len(servers))
 	for i, s := range servers {
 		nc.servers[i] = &CollectedServer{
-			ID:  s.ID,
-			URL: s.URL,
+			ID:     s.ID,
+			URL:    s.URL,
+			AcctID: s.AcctID,
 		}
 	}
 
@@ -260,12 +261,12 @@ func (nc *jszCollector) Collect(ch chan<- prometheus.Metric) {
 		default:
 			suffix = "/jsz"
 		}
-		if err := getMetricURL(nc.httpClient, server.URL+suffix, &resp); err != nil {
+		if err := getMetricURL(nc.httpClient, server.URL+suffix, server.AcctID, &resp); err != nil {
 			Debugf("ignoring server %s: %v", server.ID, err)
 			continue
 		}
 		var varz nats.Varz
-		if err := getMetricURL(nc.httpClient, server.URL+"/varz", &varz); err != nil {
+		if err := getMetricURL(nc.httpClient, server.URL+"/varz", server.AcctID, &varz); err != nil {
 			Debugf("ignoring server %s: %v", server.ID, err)
 			continue
 		}
